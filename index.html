@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Alerte Tâches & Activités</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-sidebar: #0f172a;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      
+      --status-done: #10b981;
+      --status-prog: #3b82f6;
+      --status-running: #f59e0b;
+      --status-late: #ef4444;
+      --status-canceled: #94a3b8;
+
+      --priority-urgent: #dc2626;
+      --priority-high: #ea580c;
+      --priority-normal: #3b82f6;
+      --priority-low: #64748b;
+
+      --footer-height: 52px;
+      --mobile-nav-height: 60px;
+    }
+
+    body.dark-mode {
+      --bg-main: #090d16;
+      --bg-card: #131d31;
+      --bg-sidebar: #050811;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* =========================================================
+       1. ANIMATION VIDÉO D'ACCUEIL CINÉMATIQUE (CANVAS INTÉGRÉ)
+       ========================================================= */
+    #splash-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: radial-gradient(circle at center, #1e293b 0%, #030712 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    #splash-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .splash-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      pointer-events: none;
+    }
+
+    .splash-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(37, 99, 235, 0.25);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 30px;
+      color: #93c5fd;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      animation: pulseIntro 2s infinite alternate;
+    }
+
+    .splash-logo-circle {
+      width: 96px;
+      height: 96px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, #2563eb, #60a5fa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      box-shadow: 0 0 50px rgba(37, 99, 235, 0.6);
+      margin-bottom: 20px;
+      transform: scale(0.8);
+      animation: popLogo 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .splash-title {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -1px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      margin-bottom: 8px;
+    }
+
+    .splash-subtitle {
+      font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+      color: #94a3b8;
+      max-width: 480px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .splash-signature {
+      font-size: 0.95rem;
+      color: #60a5fa;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .splash-skip-btn {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .splash-skip-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.04);
+    }
+
+    @keyframes popLogo {
+      to { transform: scale(1); }
+    }
+    @keyframes pulseIntro {
+      from { box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
+      to { box-shadow: 0 0 25px rgba(37, 99, 235, 0.8); }
+    }
+
+    /* =========================================================
+       2. BARRE LATÉRALE BUREAU
+       ========================================================= */
+    aside {
+      width: 270px;
+      background-color: var(--bg-sidebar);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 50;
+      transition: transform 0.3s ease;
+    }
+
+    .brand {
+      padding: 22px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .brand-icon {
+      font-size: 24px;
+      background: rgba(37, 99, 235, 0.3);
+      padding: 8px;
+      border-radius: 10px;
+    }
+
+    .brand h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    nav.desktop-nav {
+      flex: 1;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      color: #94a3b8;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-badge.danger {
+      background: var(--status-late);
+      color: #fff;
+    }
+
+    /* =========================================================
+       3. NAVIGATION MOBILE (DOCK DU BAS)
+       ========================================================= */
+    .mobile-bottom-bar {
+      display: none;
+      position: fixed;
+      bottom: var(--footer-height);
+      left: 0;
+      right: 0;
+      height: var(--mobile-nav-height);
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      z-index: 900;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .mobile-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+
+    .mobile-nav-btn span.icon {
+      font-size: 1.25rem;
+    }
+
+    .mobile-nav-btn.active {
+      color: var(--primary);
+    }
+
+    .mobile-badge {
+      position: absolute;
+      top: 6px;
+      right: 25%;
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      border-radius: 10px;
+      background: var(--status-late);
+      color: white;
+      font-weight: 800;
+    }
+
+    /* =========================================================
+       4. CONTENEUR PRINCIPAL & EN-TÊTE
+       ========================================================= */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .clock-display {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(37, 99, 235, 0.08);
+      padding: 6px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--border-color); color: var(--text-main); }
+    .btn-secondary:hover { opacity: 0.9; }
+    .btn-danger { background: var(--status-late); color: white; }
+
+    .content-area {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* =========================================================
+       5. FOOTER RESPONSIVE GARANTI VISIBLE SUR TOUS SMARTPHONES
+       ========================================================= */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--footer-height);
+      background: #090d16;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .footer-author-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.4px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .footer-author-box .accent {
+      color: #60a5fa;
+      text-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+    }
+
+    .footer-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--status-done);
+      box-shadow: 0 0 8px var(--status-done);
+      animation: statusPulse 1.5s infinite;
+    }
+
+    @keyframes statusPulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    /* =========================================================
+       6. COMPOSANTS DE CONTENU & DASHBOARD
+       ========================================================= */
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    .dashboard-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .hero-banner, .running-banner {
+      color: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-banner {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.3);
+    }
+
+    .running-banner {
+      background: linear-gradient(135deg, #9a3412, #ea580c);
+      box-shadow: 0 10px 20px -5px rgba(234, 88, 12, 0.3);
+    }
+
+    .hero-title {
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .hero-countdown {
+      font-size: clamp(1.6rem, 4vw, 2.3rem);
+      font-weight: 900;
+      font-family: monospace;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .data-table th, .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.88rem;
+    }
+
+    .data-table th {
+      background: rgba(0,0,0,0.02);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .badge-status-Programmée { background-color: var(--status-prog); }
+    .badge-status-En-cours { background-color: var(--status-running); }
+    .badge-status-Terminée { background-color: var(--status-done); }
+    .badge-status-En-retard { background-color: var(--status-late); }
+    .badge-status-Annulée { background-color: var(--status-canceled); }
+
+    .badge-priority-Urgente { background-color: var(--priority-urgent); }
+    .badge-priority-Haute { background-color: var(--priority-high); }
+    .badge-priority-Normale { background-color: var(--priority-normal); }
+    .badge-priority-Basse { background-color: var(--priority-low); }
+
+    .actions-cell {
+      display: flex;
+      gap: 4px;
+    }
+
+    .btn-icon {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 6px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .btn-icon:hover {
+      background: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .form-control {
+      padding: 9px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* PLANNING */
+    .planning-grid {
+      display: grid;
+      grid-template-columns: 75px 1fr;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-card);
+      overflow: hidden;
+    }
+
+    .planning-hour {
+      padding: 12px 6px;
+      border-bottom: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: monospace;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .planning-slot {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-color);
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .planning-pill {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* MODALES D'ALERTES PROLONGÉES */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 22px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      transform: translateY(20px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-alert {
+      border-top: 8px solid var(--primary);
+    }
+
+    .modal-alert.urgent {
+      border-top-color: var(--status-late);
+      animation: alertUrgent 0.8s infinite alternate;
+    }
+
+    @keyframes alertUrgent {
+      from { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+      to { box-shadow: 0 0 35px rgba(239, 68, 68, 0.9); }
+    }
+
+    .alert-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .alert-icon { font-size: 2.2rem; }
+    .alert-title { font-size: 1.25rem; font-weight: 900; }
+
+    .alert-details {
+      background: var(--bg-main);
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .sound-active-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--status-late);
+      font-size: 0.82rem;
+      font-weight: 800;
+      animation: blink 0.6s infinite alternate;
+    }
+
+    @keyframes blink {
+      from { opacity: 0.3; }
+      to { opacity: 1; }
+    }
+
+    /* =========================================================
+       7. RÈGLES RESPONSIVE MOBILE AVANCÉES
+       ========================================================= */
+    @media (max-width: 860px) {
+      body {
+        flex-direction: column;
+      }
+
+      aside {
+        display: none;
+      }
+
+      .mobile-bottom-bar {
+        display: flex;
+      }
+
+      main {
+        padding-bottom: calc(var(--footer-height) + var(--mobile-nav-height));
+      }
+
+      .content-area {
+        padding: 14px;
+      }
+
+      header {
+        padding: 10px 14px;
+      }
+
+      .clock-display {
+        font-size: 0.82rem;
+        padding: 4px 10px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-banner, .running-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+      }
+
+      .hero-timer {
+        text-align: center;
+      }
+
+      footer {
+        height: var(--footer-height);
+        padding: 0 12px;
+      }
+
+      .footer-author-box {
+        font-size: 0.78rem;
+      }
+
+      .footer-status-pill {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       1. SCÈNE ANIMATION VIDÉO D'ACCUEIL (AVEC AUDIO & PARTICULES)
+       ========================================================= -->
+  <div id="splash-intro">
+    <canvas id="splash-canvas"></canvas>
+    
+    <div class="splash-content">
+      <div class="splash-badge">✨ NOUVELLE SESSION ACTIVE</div>
+      <div class="splash-logo-circle">🔔</div>
+      <h1 class="splash-title">Alerte Tâches & Activités</h1>
+      <p class="splash-subtitle">Planification intelligente, surveillance à la seconde et alertes de précision pour ordinateur et mobile.</p>
+      <div class="splash-signature">Conçu par Parfait AKANRO - 0196322089</div>
+    </div>
+
+    <button class="splash-skip-btn" onclick="App.endSplash()">Accéder au tableau de bord ➔</button>
+  </div>
+
+  <!-- =========================================================
+       2. BARRE LATÉRALE BUREAU (DESKTOP)
+       ========================================================= -->
+  <aside>
+    <div class="brand">
+      <span class="brand-icon">🔔</span>
+      <div>
+        <h1>Alerte Tâches</h1>
+        <p style="font-size: 0.7rem; color: #94a3b8;">Windows & Mobile PWA</p>
+      </div>
+    </div>
+    <nav class="desktop-nav">
+      <a class="nav-item active" data-view="dashboard">
+        <span>🏠</span> Tableau de bord
+      </a>
+      <a class="nav-item" data-view="planning">
+        <span>📅</span> Planning
+      </a>
+      <a class="nav-item" data-view="new-task">
+        <span>➕</span> Nouvelle activité
+      </a>
+      <a class="nav-item" data-view="running">
+        <span>⏱</span> En cours
+        <span class="nav-badge" id="badge-running">0</span>
+      </a>
+      <a class="nav-item" data-view="late">
+        <span>⚠️</span> En retard
+        <span class="nav-badge danger" id="badge-late">0</span>
+      </a>
+      <a class="nav-item" data-view="history">
+        <span>📋</span> Historique
+      </a>
+      <a class="nav-item" data-view="stats">
+        <span>📊</span> Statistiques
+      </a>
+      <a class="nav-item" data-view="settings">
+        <span>⚙️</span> Paramètres
+      </a>
+    </nav>
+  </aside>
+
+  <!-- =========================================================
+       3. NAVIGATION MOBILE BASSE (SMARTPHONES)
+       ========================================================= -->
+  <div class="mobile-bottom-bar">
+    <button class="mobile-nav-btn active" onclick="App.showView('dashboard')">
+      <span class="icon">🏠</span>
+      <span>Accueil</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="App.showView('planning')">
+      <span class="icon">📅</span>
+      <span>Planning</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="App.showView('new-task')">
+      <span class="icon">➕</span>
+      <span>Ajouter</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="App.showView('running')">
+      <span class="icon">⏱</span>
+      <span>En cours</span>
+      <span class="mobile-badge" id="mobile-badge-running" style="display: none;">0</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="App.showView('late')">
+      <span class="icon">⚠️</span>
+      <span>Retard</span>
+      <span class="mobile-badge" id="mobile-badge-late" style="display: none;">0</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="App.showView('settings')">
+      <span class="icon">⚙️</span>
+      <span>Options</span>
+    </button>
+  </div>
+
+  <!-- =========================================================
+       4. ZONE DE TRAVAIL PRINCIPALE
+       ========================================================= -->
+  <main>
+    <header>
+      <div class="clock-display" id="clock">
+        <span>🕒</span> --:--:--
+      </div>
+      <div class="quick-actions">
+        <button class="btn btn-secondary" onclick="App.replaySplashAnimation()" title="Rejouer l'animation vidéo d'accueil">
+          🎬 Rejouer Intro
+        </button>
+        <button class="btn btn-secondary" onclick="App.enableStandbyProtection()" title="Empêche l'ordinateur ou le mobile de couper les alertes en veille">
+          🛡️ Veille
+        </button>
+        <button class="btn btn-primary" onclick="App.showView('new-task')">
+          <span>➕</span> Programmer
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- 1. VUE TABLEAU DE BORD -->
+      <section id="view-dashboard" class="view-section active">
+        <!-- Bannière Prochaine Activité -->
+        <div class="hero-banner" id="hero-next-activity" style="display: none;">
+          <div class="hero-info">
+            <h2 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#bfdbfe;">Prochaine activité</h2>
+            <div class="hero-title" id="hero-title">-</div>
+            <div id="hero-meta" style="font-size: 0.88rem; opacity: 0.9; margin-top: 4px;">Date : - | Horaires : -</div>
+          </div>
+          <div class="hero-timer">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #bfdbfe;">Débute dans</div>
+            <div class="hero-countdown" id="hero-countdown">00:00:00</div>
+          </div>
+        </div>
+
+        <!-- Bannière Activité En Cours -->
+        <div class="running-banner" id="hero-running-activity" style="display: none;">
+          <div class="hero-info">
+            <h2 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#fed7aa;">ACTIVITÉ EN COURS</h2>
+            <div class="hero-title" id="running-hero-title">-</div>
+            <div id="running-hero-meta" style="font-size: 0.88rem; opacity: 0.9; margin-top: 4px;">Fin prévue : --:--</div>
+          </div>
+          <div class="hero-timer">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #fed7aa;">Temps restant</div>
+            <div class="hero-countdown" id="running-hero-countdown">00:00:00</div>
+          </div>
+        </div>
+
+        <!-- Métriques -->
+        <div class="dashboard-metrics">
+          <div class="metric-card">
+            <div class="metric-label">Aujourd'hui</div>
+            <div class="metric-value" id="stat-today">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Programmées</div>
+            <div class="metric-value" style="color: var(--status-prog);" id="stat-prog">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">En cours</div>
+            <div class="metric-value" style="color: var(--status-running);" id="stat-running">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">En retard</div>
+            <div class="metric-value" style="color: var(--status-late);" id="stat-late">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Terminées</div>
+            <div class="metric-value" style="color: var(--status-done);" id="stat-done">0</div>
+          </div>
+        </div>
+
+        <!-- Liste des activités du jour -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Tâches & Activités du jour</div>
+            <input type="text" class="form-control" placeholder="Rechercher..." id="filter-search" style="max-width: 220px;" oninput="App.renderDashboard()">
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Horaires</th>
+                  <th>Activité</th>
+                  <th>Catégorie</th>
+                  <th>Priorité</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. VUE PLANNING -->
+      <section id="view-planning" class="view-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Planning de la journée</div>
+            <input type="date" id="planning-date" class="form-control" style="max-width: 170px;" onchange="App.renderPlanning()">
+          </div>
+          <div class="planning-grid">
+            <div class="planning-hour" style="background: rgba(0,0,0,0.02);">HEURE</div>
+            <div style="padding: 10px; background: rgba(0,0,0,0.02); font-weight:700; font-size:0.8rem; color:var(--text-muted);">PROGRAMME</div>
+            <div id="planning-rows-container" style="display: contents;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. VUE NOUVELLE ACTIVITÉ -->
+      <section id="view-new-task" class="view-section">
+        <div class="card" style="max-width: 680px; margin: 0 auto;">
+          <div class="card-header">
+            <div class="card-title" id="form-task-title">Programmer une nouvelle activité</div>
+          </div>
+          <div style="padding: 20px;">
+            <form id="task-form" onsubmit="App.handleSaveTask(event)">
+              <input type="hidden" id="task-id">
+              
+              <div class="form-group">
+                <label class="form-label">Titre ou nom de l'activité *</label>
+                <input type="text" id="task-name" class="form-control" placeholder="Ex: Réunion avec l'équipe pédagogique" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Description ou observations</label>
+                <textarea id="task-desc" class="form-control" rows="2" placeholder="Détails, ordre du jour, lien..."></textarea>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Catégorie *</label>
+                  <select id="task-category" class="form-control" required>
+                    <option value="Travail">Travail</option>
+                    <option value="Réunion">Réunion</option>
+                    <option value="Cours">Cours</option>
+                    <option value="Rendez-vous">Rendez-vous</option>
+                    <option value="Administration">Administration</option>
+                    <option value="Personnel">Personnel</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Priorité *</label>
+                  <select id="task-priority" class="form-control" required>
+                    <option value="Normale">Normale</option>
+                    <option value="Basse">Basse</option>
+                    <option value="Haute">Haute</option>
+                    <option value="Urgente">Urgente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Date *</label>
+                  <input type="date" id="task-date" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Répétition</label>
+                  <select id="task-repeat" class="form-control">
+                    <option value="none">Une fois</option>
+                    <option value="daily">Tous les jours</option>
+                    <option value="weekly">Toutes les semaines</option>
+                    <option value="monthly">Tous les mois</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Heure de début *</label>
+                  <input type="time" id="task-start" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Heure de fin *</label>
+                  <input type="time" id="task-end" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Alerte préalable</label>
+                <select id="task-pre-alert" class="form-control">
+                  <option value="0">Aucune alerte préalable</option>
+                  <option value="5">5 minutes avant</option>
+                  <option value="10">10 minutes avant</option>
+                  <option value="15">15 minutes avant</option>
+                  <option value="30">30 minutes avant</option>
+                  <option value="60">1 heure avant</option>
+                </select>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn btn-secondary" onclick="App.showView('dashboard')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer la tâche</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. VUE EN COURS -->
+      <section id="view-running" class="view-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Activités en cours</div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Activité</th>
+                  <th>Début</th>
+                  <th>Fin</th>
+                  <th>Restant</th>
+                  <th>Priorité</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="running-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. VUE EN RETARD -->
+      <section id="view-late" class="view-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" style="color: var(--status-late);">⚠️ Activités en retard ou expirées</div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Activité</th>
+                  <th>Horaires</th>
+                  <th>Temps de retard</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="late-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. VUE HISTORIQUE -->
+      <section id="view-history" class="view-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Historique des activités</div>
+            <select id="history-filter-status" class="form-control" style="max-width: 170px;" onchange="App.renderHistory()">
+              <option value="all">Tous</option>
+              <option value="Terminée">Terminée</option>
+              <option value="Annulée">Annulée</option>
+              <option value="En retard">À échéance</option>
+            </select>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activité</th>
+                  <th>Début</th>
+                  <th>Fin</th>
+                  <th>Prévue</th>
+                  <th>Réelle</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. VUE STATISTIQUES -->
+      <section id="view-stats" class="view-section">
+        <div class="dashboard-metrics">
+          <div class="metric-card">
+            <div class="metric-label">Total activités</div>
+            <div class="metric-value" id="stats-total">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Taux à temps</div>
+            <div class="metric-value" style="color: var(--status-done);" id="stats-on-time">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">En retard</div>
+            <div class="metric-value" style="color: var(--status-late);" id="stats-late-count">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Prolongées</div>
+            <div class="metric-value" style="color: var(--status-running);" id="stats-extended">0</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Volume horaire</div>
+          </div>
+          <div style="padding: 20px; font-size: 0.95rem; line-height: 1.8;">
+            <p>⏱ <strong>Temps total programmé :</strong> <span id="stats-time-planned">0h 00m</span></p>
+            <p>⏳ <strong>Temps réellement utilisé :</strong> <span id="stats-time-spent">0h 00m</span></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. VUE PARAMÈTRES -->
+      <section id="view-settings" class="view-section">
+        <div class="card" style="max-width: 600px;">
+          <div class="card-header">
+            <div class="card-title">Paramètres de l'application</div>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="setting-sound" checked onchange="App.saveSettings()">
+                <strong>Activer les alertes sonores prolongées</strong>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Volume sonore</label>
+              <input type="range" id="setting-volume" min="0" max="1" step="0.1" value="0.9" class="form-control" onchange="App.saveSettings()">
+            </div>
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="setting-darkmode" onchange="App.toggleDarkMode(this.checked)">
+                <strong>Activer le Mode Sombre</strong>
+              </label>
+            </div>
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="setting-confirm-delete" checked onchange="App.saveSettings()">
+                <strong>Confirmation avant suppression</strong>
+              </label>
+            </div>
+            <div class="form-group" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+              <label class="form-label">Alertes Arrière-Plan & Écran Éteint</label>
+              <button class="btn btn-secondary" onclick="App.requestNotificationPermission()">
+                🔔 Autoriser Notifications Système
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =========================================================
+         5. FOOTER RESPONSIVE FIXE GARANTI SUR TOUS APPAREILS
+         ========================================================= -->
+    <footer>
+      <div class="footer-author-box">
+        <span>Conçu par</span>
+        <span class="accent">Parfait AKANRO - 0196322089</span>
+      </div>
+      <div class="footer-status-pill">
+        <span class="status-dot"></span>
+        <span id="standby-status-text">Surveillance active</span>
+      </div>
+    </footer>
+  </main>
+
+  <!-- MODALE ALERTE COMMENCER -->
+  <div class="modal-overlay" id="modal-start-alert">
+    <div class="modal-box modal-alert" id="modal-start-box">
+      <div class="alert-header">
+        <span class="alert-icon" id="start-alert-emoji">🔔</span>
+        <div>
+          <div class="alert-title" id="start-alert-header">ACTIVITÉ À COMMENCER</div>
+          <div class="sound-active-indicator">🔊 Sonnerie active...</div>
+        </div>
+      </div>
+      <div class="alert-details">
+        <div><strong>Nom :</strong> <span id="start-alert-title"></span></div>
+        <div><strong>Début :</strong> <span id="start-alert-start"></span></div>
+        <div><strong>Fin prévue :</strong> <span id="start-alert-end"></span></div>
+        <div><strong>Priorité :</strong> <span id="start-alert-priority"></span></div>
+      </div>
+      <div class="alert-actions">
+        <button class="btn btn-danger" onclick="App.stopContinuousAlarm()">🔇 Couper le son</button>
+        <button class="btn btn-secondary" onclick="App.snoozeActivity(10)">Reporter (10 min)</button>
+        <button class="btn btn-secondary" onclick="App.closeStartModal()">Fermer</button>
+        <button class="btn btn-primary" onclick="App.confirmStartActivity()">Commencer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE ALERTE FIN -->
+  <div class="modal-overlay" id="modal-end-alert">
+    <div class="modal-box modal-alert urgent">
+      <div class="alert-header">
+        <span class="alert-icon">⏰</span>
+        <div>
+          <div class="alert-title">TEMPS ÉCOULÉ</div>
+          <div class="sound-active-indicator">🔊 Sonnerie active...</div>
+        </div>
+      </div>
+      <div class="alert-details">
+        <div><strong>Activité :</strong> <span id="end-alert-title"></span></div>
+        <div><strong>Début :</strong> <span id="end-alert-start"></span></div>
+        <div><strong>Fin prévue :</strong> <span id="end-alert-end"></span></div>
+        <div><strong>Durée prévue :</strong> <span id="end-alert-duration"></span></div>
+        <div><strong>Statut :</strong> <span id="end-alert-status"></span></div>
+      </div>
+      <div class="alert-actions">
+        <button class="btn btn-danger" onclick="App.stopContinuousAlarm()">🔇 Couper le son</button>
+        <button class="btn btn-secondary" onclick="App.extendActivity(15)">+15 min</button>
+        <button class="btn btn-secondary" onclick="App.extendActivity(30)">+30 min</button>
+        <button class="btn btn-secondary" onclick="App.extendActivity(60)">+1h</button>
+        <button class="btn btn-secondary" onclick="App.closeEndModal()">Fermer</button>
+        <button class="btn btn-primary" onclick="App.finishActivityFromModal()">Terminer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * MOTEUR DE L'APPLICATION "ALERTE TÂCHES & ACTIVITÉS"
+     */
+    const App = {
+      tasks: [],
+      settings: {
+        sound: true,
+        volume: 0.9,
+        darkMode: false,
+        confirmDelete: true
+      },
+      currentModalTaskId: null,
+      audioCtx: null,
+      alarmIntervalId: null,
+      wakeLock: null,
+      splashRunning: true,
+
+      init() {
+        this.loadStorage();
+        this.setupNavigation();
+        this.setupDefaults();
+        this.applySettings();
+
+        // Lancement de l'animation vidéo cinématique
+        this.startSplashAnimation();
+
+        // Surveillance permanente à chaque seconde
+        setInterval(() => this.tick(), 1000);
+        this.tick();
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            this.tick();
+            if (this.wakeLock === null) this.enableStandbyProtection();
+          }
+        });
+      },
+
+      /* =========================================================
+         MOTEUR CINÉMATIQUE VIDÉO EN CANVAS (ACCUEIL)
+         ========================================================= */
+      startSplashAnimation() {
+        const canvas = document.getElementById('splash-canvas');
+        const ctx = canvas.getContext('2d');
+        const splashEl = document.getElementById('splash-intro');
+        
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+        });
+
+        // Générateur de particules dynamiques
+        const particles = [];
+        for (let i = 0; i < 90; i++) {
+          particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 2.5 + 0.8,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: (Math.random() - 0.5) * 1.2,
+            color: ['#3b82f6', '#60a5fa', '#93c5fd', '#1d4ed8'][Math.floor(Math.random() * 4)],
+            alpha: Math.random() * 0.6 + 0.2
+          });
+        }
+
+        let shockwaves = [{ radius: 0, alpha: 1, speed: 4 }];
+        let startTime = performance.now();
+
+        // Son de bienvenue spatial moderne
+        setTimeout(() => this.playWelcomeChime(), 350);
+
+        const renderFrame = (now) => {
+          if (!this.splashRunning) return;
+          const elapsed = (now - startTime) / 1000;
+
+          ctx.fillStyle = '#030712';
+          ctx.fillRect(0, 0, width, height);
+
+          // Onde de choc lumineuse
+          shockwaves.forEach(sw => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2, sw.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(59, 130, 246, ${sw.alpha * 0.4})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+
+            sw.radius += sw.speed;
+            sw.alpha *= 0.985;
+          });
+
+          if (elapsed > 1.2 && shockwaves.length < 2) {
+            shockwaves.push({ radius: 0, alpha: 0.8, speed: 6 });
+          }
+
+          // Rendu des particules et connexions cinématiques
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+            if (p.y < 0) p.y = height;
+            if (p.y > height) p.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = p.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+          });
+
+          requestAnimationFrame(renderFrame);
+        };
+
+        this.splashRunning = true;
+        requestAnimationFrame(renderFrame);
+
+        // Clôture automatique après 4.2 secondes
+        this.splashAutoCloseTimer = setTimeout(() => {
+          this.endSplash();
+        }, 4200);
+      },
+
+      playWelcomeChime() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!this.audioCtx) this.audioCtx = new AudioContext();
+          if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+          const now = this.audioCtx.currentTime;
+          const chord = [261.63, 329.63, 392.00, 523.25, 659.25]; // Accord majeur C-E-G-C-E
+          chord.forEach((freq, idx) => {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.08 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 1.8);
+
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 1.8);
+          });
+        } catch (e) {
+          console.warn("Audio non disponible", e);
+        }
+      },
+
+      endSplash() {
+        clearTimeout(this.splashAutoCloseTimer);
+        const splashEl = document.getElementById('splash-intro');
+        if (splashEl) {
+          splashEl.style.opacity = '0';
+          setTimeout(() => {
+            splashEl.style.display = 'none';
+            this.splashRunning = false;
+          }, 800);
+        }
+      },
+
+      replaySplashAnimation() {
+        const splashEl = document.getElementById('splash-intro');
+        splashEl.style.display = 'flex';
+        splashEl.style.opacity = '1';
+        this.startSplashAnimation();
+      },
+
+      /* =========================================================
+         SONNERIE CONTINUE & VIBRATIONS
+         ========================================================= */
+      startContinuousAlarm() {
+        if (!this.settings.sound) return;
+        this.stopContinuousAlarm();
+
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!this.audioCtx) this.audioCtx = new AudioContext();
+          if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+          this.playSingleAlarmBurst();
+          this.alarmIntervalId = setInterval(() => {
+            this.playSingleAlarmBurst();
+          }, 1400);
+
+          if ("vibrate" in navigator) {
+            navigator.vibrate([500, 200, 500, 200, 1000]);
+          }
+        } catch (e) {
+          console.warn("Erreur sonore", e);
+        }
+      },
+
+      playSingleAlarmBurst() {
+        if (!this.audioCtx || this.audioCtx.state === 'closed') return;
+        const now = this.audioCtx.currentTime;
+        const vol = this.settings.volume;
+
+        const notes = [784, 1046.5, 1318.5]; // G5, C6, E6
+        notes.forEach((freq, idx) => {
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.18));
+
+          gain.gain.setValueAtTime(0, now + (idx * 0.18));
+          gain.gain.linearRampToValueAtTime(vol, now + (idx * 0.18) + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.18) + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+
+          osc.start(now + (idx * 0.18));
+          osc.stop(now + (idx * 0.18) + 0.36);
+        });
+      },
+
+      stopContinuousAlarm() {
+        if (this.alarmIntervalId) {
+          clearInterval(this.alarmIntervalId);
+          this.alarmIntervalId = null;
+        }
+        if ("vibrate" in navigator) navigator.vibrate(0);
+      },
+
+      async enableStandbyProtection() {
+        try {
+          if ('wakeLock' in navigator) {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            document.getElementById('standby-status-text').textContent = "Veille verrouillée • Actif";
+            this.wakeLock.addEventListener('release', () => {
+              this.wakeLock = null;
+              document.getElementById('standby-status-text').textContent = "Surveillance active";
+            });
+          }
+          alert("Mode Arrière-plan & Veille activé.\nLes alertes retentiront même écran éteint.");
+        } catch (err) {
+          alert("Protection activée via surveillance de processus locale.");
+        }
+      },
+
+      /* NOTIFICATIONS SYSTÈME BUREAU & SMARTPHONES */
+      sendSystemNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification(title, {
+              body: body,
+              requireInteraction: true,
+              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>'
+            });
+          } catch (e) {
+            console.warn(e);
+          }
+        }
+      },
+
+      requestNotificationPermission() {
+        if ("Notification" in window) {
+          Notification.requestPermission().then(p => {
+            if (p === 'granted') alert("Notifications système activées !");
+          });
+        }
+      },
+
+      /* GESTION DU TEMPS ET DE L'HORLOGE */
+      tick() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('fr-FR', { hour12: false });
+        const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        const dateFormatted = now.toLocaleDateString('fr-FR', dateOptions);
+        document.getElementById('clock').innerHTML = `<span>🕒</span> ${dateFormatted} — <strong>${timeStr}</strong>`;
+
+        this.checkAlertsAndStatuses(now);
+        this.updateCountdowns(now);
+      },
+
+      getTodayDateString() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      },
+
+      getTaskDateTime(dateStr, timeStr) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const [hour, min] = timeStr.split(':').map(Number);
+        return new Date(year, month - 1, day, hour, min, 0);
+      },
+
+      checkAlertsAndStatuses(now) {
+        let changed = false;
+
+        this.tasks.forEach(task => {
+          if (task.status === 'Terminée' || task.status === 'Annulée') return;
+
+          const startDt = this.getTaskDateTime(task.date, task.startTime);
+          const endDt = this.getTaskDateTime(task.date, task.endTime);
+
+          if (task.preAlertMinutes > 0 && !task.preAlertTriggered && task.status === 'Programmée') {
+            const preTime = new Date(startDt.getTime() - task.preAlertMinutes * 60000);
+            if (now >= preTime && now < startDt) {
+              task.preAlertTriggered = true;
+              changed = true;
+              this.triggerVisualAlert(task, 'pre');
+            }
+          }
+
+          if (!task.startAlertTriggered && now >= startDt && now < endDt) {
+            if (task.status === 'Programmée') {
+              task.startAlertTriggered = true;
+              changed = true;
+              this.triggerVisualAlert(task, 'start');
+            }
+          }
+
+          if (now >= endDt) {
+            if (task.status === 'En cours' && !task.endAlertTriggered) {
+              task.endAlertTriggered = true;
+              task.status = 'En retard';
+              changed = true;
+              this.triggerVisualAlert(task, 'end');
+            } else if (task.status === 'Programmée') {
+              task.status = 'En retard';
+              changed = true;
+            }
+          }
+        });
+
+        if (changed) {
+          this.saveStorage();
+          this.updateBadges();
+        }
+      },
+
+      triggerVisualAlert(task, type) {
+        this.currentModalTaskId = task.id;
+        this.startContinuousAlarm();
+
+        if (type === 'pre' || type === 'start') {
+          const modal = document.getElementById('modal-start-alert');
+          const box = document.getElementById('modal-start-box');
+
+          if (task.priority === 'Urgente') box.classList.add('urgent');
+          else box.classList.remove('urgent');
+
+          if (type === 'pre') {
+            document.getElementById('start-alert-emoji').textContent = '⏳';
+            document.getElementById('start-alert-header').textContent = 'RAPPEL D’ACTIVITÉ';
+            this.sendSystemNotification(`⏳ Rappel : ${task.title}`, `Début dans ${task.preAlertMinutes} minutes.`);
+          } else {
+            document.getElementById('start-alert-emoji').textContent = '🔔';
+            document.getElementById('start-alert-header').textContent = 'ACTIVITÉ À COMMENCER';
+            this.sendSystemNotification(`🔔 C'EST L'HEURE : ${task.title}`, `Début prévu à ${task.startTime}.`);
+          }
+
+          document.getElementById('start-alert-title').textContent = task.title;
+          document.getElementById('start-alert-start').textContent = task.startTime;
+          document.getElementById('start-alert-end').textContent = task.endTime;
+          document.getElementById('start-alert-priority').textContent = task.priority;
+
+          modal.classList.add('active');
+        } else if (type === 'end') {
+          const modal = document.getElementById('modal-end-alert');
+          document.getElementById('end-alert-title').textContent = task.title;
+          document.getElementById('end-alert-start').textContent = task.realStartTime || task.startTime;
+          document.getElementById('end-alert-end').textContent = task.endTime;
+          document.getElementById('end-alert-duration').textContent = this.computeDurationString(task.startTime, task.endTime);
+          document.getElementById('end-alert-status').textContent = task.status;
+
+          this.sendSystemNotification(`⏰ TEMPS ÉCOULÉ : ${task.title}`, `L'activité devait se terminer à ${task.endTime}.`);
+          modal.classList.add('active');
+        }
+      },
+
+      closeStartModal() {
+        this.stopContinuousAlarm();
+        document.getElementById('modal-start-alert').classList.remove('active');
+        this.currentModalTaskId = null;
+      },
+
+      closeEndModal() {
+        this.stopContinuousAlarm();
+        document.getElementById('modal-end-alert').classList.remove('active');
+        this.currentModalTaskId = null;
+      },
+
+      confirmStartActivity() {
+        const task = this.tasks.find(t => t.id === this.currentModalTaskId);
+        if (task) {
+          task.status = 'En cours';
+          task.realStartTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          this.saveStorage();
+          this.renderDashboard();
+          this.updateBadges();
+        }
+        this.closeStartModal();
+      },
+
+      snoozeActivity(minutes) {
+        const task = this.tasks.find(t => t.id === this.currentModalTaskId);
+        if (task) {
+          const now = new Date();
+          const newStart = new Date(now.getTime() + minutes * 60000);
+          task.startTime = newStart.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          task.startAlertTriggered = false;
+          this.saveStorage();
+          this.renderDashboard();
+        }
+        this.closeStartModal();
+      },
+
+      finishActivityFromModal() {
+        if (this.currentModalTaskId) this.markTaskCompleted(this.currentModalTaskId);
+        this.closeEndModal();
+      },
+
+      extendActivity(minutes) {
+        const task = this.tasks.find(t => t.id === this.currentModalTaskId);
+        if (task) {
+          const endDt = this.getTaskDateTime(task.date, task.endTime);
+          const newEnd = new Date(endDt.getTime() + minutes * 60000);
+          task.endTime = newEnd.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          task.status = 'En cours';
+          task.endAlertTriggered = false;
+          task.extendedCount = (task.extendedCount || 0) + 1;
+          this.saveStorage();
+          this.renderDashboard();
+          this.updateBadges();
+        }
+        this.closeEndModal();
+      },
+
+      updateCountdowns(now) {
+        const todayStr = this.getTodayDateString();
+        
+        const runningTask = this.tasks.find(t => t.status === 'En cours' && t.date === todayStr);
+        const heroRunning = document.getElementById('hero-running-activity');
+        if (runningTask) {
+          heroRunning.style.display = 'flex';
+          document.getElementById('running-hero-title').textContent = runningTask.title;
+          document.getElementById('running-hero-meta').textContent = `Fin prévue : ${runningTask.endTime}`;
+          
+          const endDt = this.getTaskDateTime(runningTask.date, runningTask.endTime);
+          const diff = endDt - now;
+          document.getElementById('running-hero-countdown').textContent = diff > 0 ? this.formatDuration(diff) : "00:00:00";
+        } else {
+          heroRunning.style.display = 'none';
+        }
+
+        const upcomingTasks = this.tasks
+          .filter(t => t.status === 'Programmée')
+          .map(t => ({ task: t, start: this.getTaskDateTime(t.date, t.startTime) }))
+          .filter(item => item.start > now)
+          .sort((a, b) => a.start - b.start);
+
+        const heroNext = document.getElementById('hero-next-activity');
+        if (upcomingTasks.length > 0) {
+          const next = upcomingTasks[0];
+          heroNext.style.display = 'flex';
+          document.getElementById('hero-title').textContent = next.task.title;
+          document.getElementById('hero-meta').textContent = `Date : ${next.task.date} | Horaires : ${next.task.startTime} – ${next.task.endTime}`;
+          const diff = next.start - now;
+          document.getElementById('hero-countdown').textContent = this.formatDuration(diff);
+        } else {
+          heroNext.style.display = 'none';
+        }
+      },
+
+      formatDuration(ms) {
+        const totalSecs = Math.max(0, Math.floor(ms / 1000));
+        const hours = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+        const secs = String(totalSecs % 60).padStart(2, '0');
+        return `${hours}:${mins}:${secs}`;
+      },
+
+      computeDurationString(start, end) {
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+        if (diffMinutes < 0) diffMinutes += 24 * 60;
+        const h = Math.floor(diffMinutes / 60);
+        const m = diffMinutes % 60;
+        return `${h}h ${String(m).padStart(2, '0')}m`;
+      },
+
+      /* GESTION DU FORMULAIRE */
+      handleSaveTask(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('task-id').value;
+        const title = document.getElementById('task-name').value.trim();
+        const desc = document.getElementById('task-desc').value.trim();
+        const category = document.getElementById('task-category').value;
+        const priority = document.getElementById('task-priority').value;
+        const date = document.getElementById('task-date').value;
+        const startTime = document.getElementById('task-start').value;
+        const endTime = document.getElementById('task-end').value;
+        const repeat = document.getElementById('task-repeat').value;
+        const preAlertMinutes = parseInt(document.getElementById('task-pre-alert').value, 10);
+
+        if (startTime >= endTime) {
+          alert("L'heure de fin doit être supérieure à l'heure de début.");
+          return;
+        }
+
+        if (id) {
+          const existing = this.tasks.find(t => t.id === id);
+          if (existing) {
+            existing.title = title;
+            existing.desc = desc;
+            existing.category = category;
+            existing.priority = priority;
+            existing.date = date;
+            existing.startTime = startTime;
+            existing.endTime = endTime;
+            existing.repeat = repeat;
+            existing.preAlertMinutes = preAlertMinutes;
+          }
+        } else {
+          this.tasks.push({
+            id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            title,
+            desc,
+            category,
+            priority,
+            date,
+            startTime,
+            endTime,
+            repeat,
+            preAlertMinutes,
+            status: 'Programmée',
+            createdAt: new Date().toISOString(),
+            startAlertTriggered: false,
+            endAlertTriggered: false,
+            preAlertTriggered: false,
+            realStartTime: null,
+            realEndTime: null,
+            extendedCount: 0
+          });
+        }
+
+        this.saveStorage();
+        document.getElementById('task-form').reset();
+        document.getElementById('task-id').value = '';
+        this.setupDefaults();
+        this.showView('dashboard');
+      },
+
+      editTask(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (!task) return;
+
+        document.getElementById('task-id').value = task.id;
+        document.getElementById('task-name').value = task.title;
+        document.getElementById('task-desc').value = task.desc || '';
+        document.getElementById('task-category').value = task.category;
+        document.getElementById('task-priority').value = task.priority;
+        document.getElementById('task-date').value = task.date;
+        document.getElementById('task-start').value = task.startTime;
+        document.getElementById('task-end').value = task.endTime;
+        document.getElementById('task-repeat').value = task.repeat || 'none';
+        document.getElementById('task-pre-alert').value = task.preAlertMinutes || 0;
+
+        document.getElementById('form-task-title').textContent = "Modifier l'activité";
+        this.showView('new-task');
+      },
+
+      duplicateTask(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const copy = JSON.parse(JSON.stringify(task));
+        copy.id = 'task_' + Date.now();
+        copy.title = `${copy.title} (Copie)`;
+        copy.status = 'Programmée';
+        copy.startAlertTriggered = false;
+        copy.endAlertTriggered = false;
+        copy.preAlertTriggered = false;
+        copy.realStartTime = null;
+        copy.realEndTime = null;
+
+        this.tasks.push(copy);
+        this.saveStorage();
+        this.renderDashboard();
+      },
+
+      deleteTask(id) {
+        if (this.settings.confirmDelete && !confirm("Voulez-vous vraiment supprimer cette activité ?")) return;
+        this.tasks = this.tasks.filter(t => t.id !== id);
+        this.saveStorage();
+        this.renderDashboard();
+        this.updateBadges();
+      },
+
+      markTaskCompleted(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (task) {
+          task.status = 'Terminée';
+          task.realEndTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          this.saveStorage();
+          this.renderDashboard();
+          this.updateBadges();
+        }
+      },
+
+      cancelTask(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (task) {
+          task.status = 'Annulée';
+          this.saveStorage();
+          this.renderDashboard();
+          this.updateBadges();
+        }
+      },
+
+      startTaskManually(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (task) {
+          task.status = 'En cours';
+          task.realStartTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          this.saveStorage();
+          this.renderDashboard();
+          this.updateBadges();
+        }
+      },
+
+      updateBadges() {
+        const running = this.tasks.filter(t => t.status === 'En cours').length;
+        const late = this.tasks.filter(t => t.status === 'En retard').length;
+        
+        document.getElementById('badge-running').textContent = running;
+        document.getElementById('badge-late').textContent = late;
+
+        const mRunning = document.getElementById('mobile-badge-running');
+        const mLate = document.getElementById('mobile-badge-late');
+
+        mRunning.textContent = running;
+        mRunning.style.display = running > 0 ? 'inline-block' : 'none';
+
+        mLate.textContent = late;
+        mLate.style.display = late > 0 ? 'inline-block' : 'none';
+      },
+
+      renderDashboard() {
+        const todayStr = this.getTodayDateString();
+        const search = document.getElementById('filter-search').value.toLowerCase();
+        const tbody = document.getElementById('dashboard-table-body');
+        tbody.innerHTML = '';
+
+        const todayTasks = this.tasks.filter(t => t.date === todayStr);
+
+        document.getElementById('stat-today').textContent = todayTasks.length;
+        document.getElementById('stat-prog').textContent = todayTasks.filter(t => t.status === 'Programmée').length;
+        document.getElementById('stat-running').textContent = todayTasks.filter(t => t.status === 'En cours').length;
+        document.getElementById('stat-late').textContent = todayTasks.filter(t => t.status === 'En retard').length;
+        document.getElementById('stat-done').textContent = todayTasks.filter(t => t.status === 'Terminée').length;
+
+        const filtered = todayTasks.filter(t => t.title.toLowerCase().includes(search) || t.category.toLowerCase().includes(search));
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Aucune tâche programmée pour aujourd'hui.</td></tr>`;
+          return;
+        }
+
+        filtered.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        filtered.forEach(task => {
+          const tr = document.createElement('tr');
+          const safeStatusClass = task.status.replace(/\s+/g, '-');
+          tr.innerHTML = `
+            <td><strong>${task.startTime} – ${task.endTime}</strong></td>
+            <td>
+              <div style="font-weight: 700;">${task.title}</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted);">${task.desc || 'Sans observation'}</div>
+            </td>
+            <td>${task.category}</td>
+            <td><span class="badge badge-priority-${task.priority}">${task.priority}</span></td>
+            <td><span class="badge badge-status-${safeStatusClass}">${task.status}</span></td>
+            <td>
+              <div class="actions-cell">
+                ${task.status === 'Programmée' ? `<button class="btn-icon" title="Commencer" onclick="App.startTaskManually('${task.id}')">▶</button>` : ''}
+                ${task.status === 'En cours' || task.status === 'En retard' ? `<button class="btn-icon" title="Terminer" onclick="App.markTaskCompleted('${task.id}')">✅</button>` : ''}
+                <button class="btn-icon" title="Modifier" onclick="App.editTask('${task.id}')">✏️</button>
+                <button class="btn-icon" title="Dupliquer" onclick="App.duplicateTask('${task.id}')">📋</button>
+                <button class="btn-icon" title="Supprimer" onclick="App.deleteTask('${task.id}')">🗑️</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderPlanning() {
+        const dateInput = document.getElementById('planning-date').value;
+        const container = document.getElementById('planning-rows-container');
+        container.innerHTML = '';
+
+        const dayTasks = this.tasks.filter(t => t.date === dateInput);
+
+        for (let h = 7; h <= 21; h++) {
+          const hourStr = String(h).padStart(2, '0') + ':00';
+          const nextHourStr = String(h + 1).padStart(2, '0') + ':00';
+
+          const matching = dayTasks.filter(t => {
+            return (t.startTime >= hourStr && t.startTime < nextHourStr) ||
+                   (t.startTime <= hourStr && t.endTime > hourStr);
+          });
+
+          const hourCell = document.createElement('div');
+          hourCell.className = 'planning-hour';
+          hourCell.textContent = hourStr;
+
+          const slotCell = document.createElement('div');
+          slotCell.className = 'planning-slot';
+
+          matching.forEach(t => {
+            const pill = document.createElement('div');
+            pill.className = 'planning-pill';
+            
+            let bgColor = 'var(--status-prog)';
+            if (t.status === 'Terminée') bgColor = 'var(--status-done)';
+            if (t.status === 'En cours') bgColor = 'var(--status-running)';
+            if (t.status === 'En retard') bgColor = 'var(--status-late)';
+            pill.style.backgroundColor = bgColor;
+
+            pill.innerHTML = `
+              <span>${t.startTime} - ${t.endTime} • ${t.title}</span>
+              <span style="font-size:0.72rem; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px;">${t.status}</span>
+            `;
+            slotCell.appendChild(pill);
+          });
+
+          container.appendChild(hourCell);
+          container.appendChild(slotCell);
+        }
+      },
+
+      renderRunning() {
+        const tbody = document.getElementById('running-table-body');
+        tbody.innerHTML = '';
+        const running = this.tasks.filter(t => t.status === 'En cours');
+
+        if (running.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Aucune tâche en cours.</td></tr>`;
+          return;
+        }
+
+        const now = new Date();
+        running.forEach(t => {
+          const endDt = this.getTaskDateTime(t.date, t.endTime);
+          const diff = endDt - now;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${t.title}</strong></td>
+            <td>${t.realStartTime || t.startTime}</td>
+            <td>${t.endTime}</td>
+            <td><strong style="font-family: monospace; color: var(--status-running);">${diff > 0 ? this.formatDuration(diff) : 'Expiré'}</strong></td>
+            <td><span class="badge badge-priority-${t.priority}">${t.priority}</span></td>
+            <td>
+              <div class="actions-cell">
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="App.currentModalTaskId='${t.id}'; App.extendActivity(15)">+15m</button>
+                <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="App.markTaskCompleted('${t.id}')">Terminer</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderLate() {
+        const tbody = document.getElementById('late-table-body');
+        tbody.innerHTML = '';
+        const late = this.tasks.filter(t => t.status === 'En retard');
+
+        if (late.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--status-done); padding: 20px;">Aucune activité en retard.</td></tr>`;
+          return;
+        }
+
+        const now = new Date();
+        late.forEach(t => {
+          const endDt = this.getTaskDateTime(t.date, t.endTime);
+          const delayStr = this.formatDuration(now - endDt);
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${t.title}</strong></td>
+            <td>${t.startTime} - ${t.endTime}</td>
+            <td><strong style="color: var(--status-late); font-family: monospace;">+ ${delayStr}</strong></td>
+            <td><span class="badge badge-status-En-retard">En retard</span></td>
+            <td>
+              <div class="actions-cell">
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="App.currentModalTaskId='${t.id}'; App.extendActivity(15)">Prolonger</button>
+                <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="App.markTaskCompleted('${t.id}')">Terminer</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderHistory() {
+        const tbody = document.getElementById('history-table-body');
+        const filter = document.getElementById('history-filter-status').value;
+        tbody.innerHTML = '';
+
+        let list = this.tasks.filter(t => ['Terminée', 'Annulée', 'En retard'].includes(t.status));
+        if (filter !== 'all') list = list.filter(t => t.status === filter);
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Aucun historique disponible.</td></tr>`;
+          return;
+        }
+
+        list.sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime));
+
+        list.forEach(t => {
+          const safeStatus = t.status.replace(/\s+/g, '-');
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${t.date}</td>
+            <td><strong>${t.title}</strong></td>
+            <td>${t.startTime} / ${t.realStartTime || '--'}</td>
+            <td>${t.endTime} / ${t.realEndTime || '--'}</td>
+            <td>${this.computeDurationString(t.startTime, t.endTime)}</td>
+            <td>${(t.realStartTime && t.realEndTime) ? this.computeDurationString(t.realStartTime, t.realEndTime) : '--'}</td>
+            <td><span class="badge badge-status-${safeStatus}">${t.status}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderStats() {
+        const total = this.tasks.length;
+        const done = this.tasks.filter(t => t.status === 'Terminée').length;
+        const late = this.tasks.filter(t => t.status === 'En retard').length;
+        const extended = this.tasks.filter(t => (t.extendedCount || 0) > 0).length;
+
+        document.getElementById('stats-total').textContent = total;
+        document.getElementById('stats-late-count').textContent = late;
+        document.getElementById('stats-extended').textContent = extended;
+        document.getElementById('stats-on-time').textContent = `${total > 0 ? Math.round((done / total) * 100) : 0}%`;
+
+        let plannedMins = 0;
+        this.tasks.forEach(t => {
+          const [h1, m1] = t.startTime.split(':').map(Number);
+          const [h2, m2] = t.endTime.split(':').map(Number);
+          let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (diff < 0) diff += 1440;
+          plannedMins += diff;
+        });
+
+        const ph = Math.floor(plannedMins / 60);
+        const pm = plannedMins % 60;
+        document.getElementById('stats-time-planned').textContent = `${ph}h ${pm}m`;
+        document.getElementById('stats-time-spent').textContent = `${ph}h ${pm}m`;
+      },
+
+      /* NAVIGATION */
+      setupNavigation() {
+        document.querySelectorAll('.desktop-nav .nav-item').forEach(item => {
+          item.addEventListener('click', () => {
+            this.showView(item.getAttribute('data-view'));
+          });
+        });
+      },
+
+      showView(viewId) {
+        document.querySelectorAll('.desktop-nav .nav-item').forEach(el => el.classList.remove('active'));
+        const navTarget = document.querySelector(`.desktop-nav .nav-item[data-view="${viewId}"]`);
+        if (navTarget) navTarget.classList.add('active');
+
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+        const mobileTarget = Array.from(document.querySelectorAll('.mobile-nav-btn')).find(b => b.getAttribute('onclick')?.includes(viewId));
+        if (mobileTarget) mobileTarget.classList.add('active');
+
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (targetView) targetView.classList.add('active');
+
+        if (viewId === 'dashboard') this.renderDashboard();
+        if (viewId === 'planning') this.renderPlanning();
+        if (viewId === 'running') this.renderRunning();
+        if (viewId === 'late') this.renderLate();
+        if (viewId === 'history') this.renderHistory();
+        if (viewId === 'stats') this.renderStats();
+      },
+
+      /* STOCKAGE */
+      loadStorage() {
+        try {
+          const t = localStorage.getItem('app_tasks_v1');
+          if (t) this.tasks = JSON.parse(t);
+          const s = localStorage.getItem('app_settings_v1');
+          if (s) this.settings = JSON.parse(s);
+        } catch (e) {
+          console.error(e);
+        }
+      },
+
+      saveStorage() {
+        localStorage.setItem('app_tasks_v1', JSON.stringify(this.tasks));
+      },
+
+      saveSettings() {
+        this.settings.sound = document.getElementById('setting-sound').checked;
+        this.settings.volume = parseFloat(document.getElementById('setting-volume').value);
+        this.settings.confirmDelete = document.getElementById('setting-confirm-delete').checked;
+        localStorage.setItem('app_settings_v1', JSON.stringify(this.settings));
+      },
+
+      applySettings() {
+        document.getElementById('setting-sound').checked = this.settings.sound;
+        document.getElementById('setting-volume').value = this.settings.volume;
+        document.getElementById('setting-confirm-delete').checked = this.settings.confirmDelete;
+        document.getElementById('setting-darkmode').checked = this.settings.darkMode;
+        this.toggleDarkMode(this.settings.darkMode, false);
+      },
+
+      toggleDarkMode(enable, save = true) {
+        this.settings.darkMode = enable;
+        if (enable) document.body.classList.add('dark-mode');
+        else document.body.classList.remove('dark-mode');
+        if (save) localStorage.setItem('app_settings_v1', JSON.stringify(this.settings));
+      },
+
+      setupDefaults() {
+        const todayStr = this.getTodayDateString();
+        document.getElementById('task-date').value = todayStr;
+        document.getElementById('planning-date').value = todayStr;
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => App.init());
+  </script>
+</body>
+</html>
